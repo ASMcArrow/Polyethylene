@@ -1,4 +1,5 @@
 [Dolphin]
-Timestamp=2013,8,22,12,38,56
-Version=3
-ViewMode=2
+AdditionalInfoV2=Details_Size,Details_Date,CustomizedDetails
+Timestamp=2012,7,30,18,6,48
+Version=2
+ViewMode=1
