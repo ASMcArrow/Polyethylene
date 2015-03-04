@@ -15,8 +15,12 @@
 #include "G4SolidStore.hh"
 #include "G4VSolid.hh"
 #include "G4AssemblyVolume.hh"
+#include "G4TransportationManager.hh"
+#include "G4FieldManager.hh"
 
 using namespace CLHEP;
+
+G4ThreadLocal G4UniformMagField* PolyethyleneDetectorConstruction::MagneticField = 0;
 
 G4VPhysicalVolume* PolyethyleneDetectorConstruction::Construct()
 {
@@ -40,11 +44,11 @@ G4VPhysicalVolume* PolyethyleneDetectorConstruction::Construct()
     visAttributesInner->SetForceSolid(true);
 
     G4Box* brassSheet = new G4Box("BrassSheet", 7.5*cm, 7.5*cm, 0.00127*cm);
-    G4LogicalVolume *brassLogic = new G4LogicalVolume(brassSheet, MaterialMap["Brass"], "BrassLogic");
-    brassLogic->SetVisAttributes(visAttributesInner);
+    BrassLogic = new G4LogicalVolume(brassSheet, MaterialMap["Brass"], "BrassLogic");
+    BrassLogic->SetVisAttributes(visAttributesInner);
 
     G4Box* CH2Sheet = new G4Box("CH2Sheet", 7.5*cm, 7.5*cm, 0.1585*cm);
-    G4LogicalVolume *CH2Logic = new G4LogicalVolume(CH2Sheet, MaterialMap["Polyethylene"], "CH2Logic");
+    CH2Logic = new G4LogicalVolume(CH2Sheet, MaterialMap["Polyethylene"], "CH2Logic");
     CH2Logic->SetVisAttributes(visAttributesInner);
 
     G4ThreeVector firstPos(0, 0, 0);
@@ -52,7 +56,7 @@ G4VPhysicalVolume* PolyethyleneDetectorConstruction::Construct()
     G4double channelWidth = (0.00127*cm + 0.1585*cm)*2;
 
     G4AssemblyVolume* channelLogic = new G4AssemblyVolume();
-    channelLogic->AddPlacedVolume(brassLogic, firstPos, 0);
+    channelLogic->AddPlacedVolume(BrassLogic, firstPos, 0);
     channelLogic->AddPlacedVolume(CH2Logic, secondPos, 0);
 
     for( unsigned int i = 0; i <= 64; i++ )
@@ -61,7 +65,7 @@ G4VPhysicalVolume* PolyethyleneDetectorConstruction::Construct()
         channelLogic->MakeImprint(worldLogic, offset, 0);
     }
 
-    new G4PVPlacement(0, G4ThreeVector(0, 0, 65*channelWidth), brassLogic, "LastBrassSheet", worldLogic,
+    new G4PVPlacement(0, G4ThreeVector(0, 0, 65*channelWidth), BrassLogic, "LastBrassSheet", worldLogic,
                                                           false, 0);
     return worldPhys;
 }
@@ -125,6 +129,15 @@ void PolyethyleneDetectorConstruction::InitializeMaterials()
     CH2->AddElement(H,2);
     CH2->AddElement(C,1);
     MaterialMap["Polyethylene"] = CH2;
+}
+
+void PolyethyleneDetectorConstruction::ConstructSDandField()
+{
+    MagneticField = new G4UniformMagField(G4ThreeVector(100500*gauss,100500*gauss, 0));
+    G4FieldManager* fieldMgr = new G4FieldManager(MagneticField);
+    BrassLogic->SetFieldManager(fieldMgr, false);
+    CH2Logic->SetFieldManager(fieldMgr, false);
+    //G4TransportationManager::GetTransportationManager()->SetFieldManager(fieldMgr);
 }
 
 
